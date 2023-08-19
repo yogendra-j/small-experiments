@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	needWordCountPtr := flag.Bool("w", false, "Count words in the input")
-	needLineCountPtr := flag.Bool("l", false, "Count lines in the input")
-	needByteCountPtr := flag.Bool("c", false, "Count bytes in the input")
+	needWordCountFlagPtr := flag.Bool("w", false, "Count words in the input")
+	needLineCountFlagPtr := flag.Bool("l", false, "Count lines in the input")
+	needByteCountFlagPtr := flag.Bool("c", false, "Count bytes in the input")
 
 	flag.Parse()
 
@@ -17,39 +17,21 @@ func main() {
 
 	output := filePath
 
-	if *needByteCountPtr {
+	if *needByteCountFlagPtr {
 		output = fmt.Sprintf("%d %s", countBytes(&filePath), output)
 	}
-	if *needWordCountPtr {
+	if *needWordCountFlagPtr {
 		output = fmt.Sprintf("%d %s", 7, output)
 	}
-	if *needLineCountPtr {
+	if *needLineCountFlagPtr {
 		output = fmt.Sprintf("%d %s", 7, output)
 	}
-	if !(*needByteCountPtr || *needWordCountPtr || *needLineCountPtr) {
+	if isAllFalse(*needByteCountFlagPtr, *needWordCountFlagPtr, *needLineCountFlagPtr) {
 		output = fmt.Sprintf("%d %d %d %s", 7, 7, countBytes(&filePath), output)
 	}
 
 	fmt.Println(output)
 
-}
-
-func countBytes(filePath *string) int {
-	byteCount := 0
-
-	fileStream := openFile(filePath)
-	defer fileStream.Close()
-
-	buffer := make([]byte, 1024)
-	for {
-		bytesRead, err := fileStream.Read(buffer)
-		byteCount += bytesRead
-		if err != nil {
-			break
-		}
-	}
-
-	return byteCount
 }
 
 func openFile(filePath *string) *os.File {
@@ -58,4 +40,13 @@ func openFile(filePath *string) *os.File {
 		panic(err)
 	}
 	return fileStream
+}
+
+func isAllFalse(args ...bool) bool {
+	for _, v := range args {
+		if v {
+			return false
+		}
+	}
+	return true
 }
