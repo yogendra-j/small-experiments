@@ -4,38 +4,11 @@ import (
 	"testing"
 )
 
-func TestCountBytes(t *testing.T) {
+func TestFormattedOutput_NoFlags_ValidFile(t *testing.T) {
 	filePath := "test.txt"
-	expected := 342384
-	actual := countBytes(&filePath)
+	expected := "7189 58164 342384 test.txt"
+	actual := getFormattedOutput([]string{filePath})
 	if actual != expected {
-		t.Errorf("Expected %d, got %d", expected, actual)
-	}
-}
-
-func TestCountLines(t *testing.T) {
-	filePath := "test.txt"
-	expected := 7189
-	actual := countLines(&filePath)
-	if actual != expected {
-		t.Errorf("Expected %d, got %d", expected, actual)
-	}
-}
-
-func TestCountWords(t *testing.T) {
-	filePath := "test.txt"
-	expected := 58164
-	actual := countWords(&filePath)
-	if actual != expected {
-		t.Errorf("Expected %d, got %d", expected, actual)
-	}
-}
-
-func TestCountChars(t *testing.T) {
-	filePath := "test.txt"
-	expected := 339486
-	actual := countChars(&filePath)
-	if actual != expected {
-		t.Errorf("Expected %d, got %d", expected, actual)
+		t.Errorf("Expected %s, got %s", expected, actual)
 	}
 }

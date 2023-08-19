@@ -1,56 +1,47 @@
 package main
 
 import (
-	"flag"
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 )
 
 func main() {
-	needWordCountFlagPtr := flag.Bool("w", false, "Count words in the input")
-	needLineCountFlagPtr := flag.Bool("l", false, "Count lines in the input")
-	needByteCountFlagPtr := flag.Bool("c", false, "Count bytes in the input")
-	needCharCountFlagPtr := flag.Bool("m", false, "Count characters in the input")
-
-	flag.Parse()
-
-	filePath := flag.Arg(0)
-
-	output := filePath
-
-	if *needByteCountFlagPtr {
-		output = fmt.Sprintf("%d %s", countBytes(&filePath), output)
-	}
-	if *needWordCountFlagPtr {
-		output = fmt.Sprintf("%d %s", countWords(&filePath), output)
-	}
-	if *needLineCountFlagPtr {
-		output = fmt.Sprintf("%d %s", countLines(&filePath), output)
-	}
-	if *needCharCountFlagPtr {
-		output = fmt.Sprintf("%d %s", countChars(&filePath), output)
-	}
-	if isAllFalse(*needByteCountFlagPtr, *needWordCountFlagPtr, *needLineCountFlagPtr) {
-		output = fmt.Sprintf("%d %d %d %s", countWords(&filePath), countLines(&filePath), countBytes(&filePath), output)
-	}
-
-	fmt.Println(output)
-
+	fmt.Println(getFormattedOutput(os.Args[1:]))
 }
 
-func openFile(filePath *string) *os.File {
+func openFile(filePath *string) *bufio.Reader {
 	fileStream, err := os.Open(*filePath)
 	if err != nil {
 		panic(err)
 	}
-	return fileStream
+	return bufio.NewReaderSize(fileStream, 4096)
 }
 
-func isAllFalse(args ...bool) bool {
-	for _, v := range args {
-		if v {
-			return false
+func getFormattedOutput(args []string) string {
+	filepath := args[0]
+	reader := openFile(&filepath)
+	wordsCount, linesCount, bytesCount, _ := getCounts(reader)
+
+	return fmt.Sprintf("%d %d %d %s", linesCount, wordsCount, bytesCount, filepath)
+}
+
+func getCounts(reader *bufio.Reader) (int, int, int, int) {
+	wordsCount, linesCount, bytesCount, charsCount := 0, 0, 0, 0
+
+	for {
+		line, err := reader.ReadBytes('\n')
+		if err != nil {
+			if err.Error() != "EOF" {
+				panic(err)
+			}
+			break
 		}
+		linesCount++
+		bytesCount += len(line)
+		charsCount += len(bytes.Runes(line))
+		wordsCount += len(bytes.Fields(line))
 	}
-	return true
+	return wordsCount, linesCount, bytesCount, charsCount
 }
