@@ -10,6 +10,7 @@ func main() {
 	needWordCountFlagPtr := flag.Bool("w", false, "Count words in the input")
 	needLineCountFlagPtr := flag.Bool("l", false, "Count lines in the input")
 	needByteCountFlagPtr := flag.Bool("c", false, "Count bytes in the input")
+	needCharCountFlagPtr := flag.Bool("m", false, "Count characters in the input")
 
 	flag.Parse()
 
@@ -25,6 +26,9 @@ func main() {
 	}
 	if *needLineCountFlagPtr {
 		output = fmt.Sprintf("%d %s", countLines(&filePath), output)
+	}
+	if *needCharCountFlagPtr {
+		output = fmt.Sprintf("%d %s", countChars(&filePath), output)
 	}
 	if isAllFalse(*needByteCountFlagPtr, *needWordCountFlagPtr, *needLineCountFlagPtr) {
 		output = fmt.Sprintf("%d %d %d %s", countWords(&filePath), countLines(&filePath), countBytes(&filePath), output)

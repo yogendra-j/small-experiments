@@ -5,17 +5,17 @@ import (
 	"fmt"
 )
 
-func countWords(filePath *string) int {
-	wordCount := 0
+func countChars(filePath *string) int {
+	charCount := 0
 
 	fileStream := openFile(filePath)
 	defer fileStream.Close()
 
 	scanner := bufio.NewScanner(fileStream)
-	scanner.Split(bufio.ScanWords)
+	scanner.Split(bufio.ScanRunes)
 
 	for scanner.Scan() {
-		wordCount++
+		charCount++
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -23,6 +23,5 @@ func countWords(filePath *string) int {
 		return -1
 	}
 
-	return wordCount
-
+	return charCount
 }
