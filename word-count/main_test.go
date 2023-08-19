@@ -21,3 +21,12 @@ func TestCountLines(t *testing.T) {
 		t.Errorf("Expected %d, got %d", expected, actual)
 	}
 }
+
+func TestCountWords(t *testing.T) {
+	filePath := "test.txt"
+	expected := 58164
+	actual := countWords(&filePath)
+	if actual != expected {
+		t.Errorf("Expected %d, got %d", expected, actual)
+	}
+}

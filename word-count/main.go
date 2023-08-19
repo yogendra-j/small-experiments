@@ -21,13 +21,13 @@ func main() {
 		output = fmt.Sprintf("%d %s", countBytes(&filePath), output)
 	}
 	if *needWordCountFlagPtr {
-		output = fmt.Sprintf("%d %s", 7, output)
+		output = fmt.Sprintf("%d %s", countWords(&filePath), output)
 	}
 	if *needLineCountFlagPtr {
 		output = fmt.Sprintf("%d %s", countLines(&filePath), output)
 	}
 	if isAllFalse(*needByteCountFlagPtr, *needWordCountFlagPtr, *needLineCountFlagPtr) {
-		output = fmt.Sprintf("%d %d %d %s", 7, 7, countBytes(&filePath), output)
+		output = fmt.Sprintf("%d %d %d %s", countWords(&filePath), countLines(&filePath), countBytes(&filePath), output)
 	}
 
 	fmt.Println(output)
