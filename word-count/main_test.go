@@ -12,3 +12,12 @@ func TestFormattedOutput_NoFlags_ValidFile(t *testing.T) {
 		t.Errorf("Expected %s, got %s", expected, actual)
 	}
 }
+
+func TestFormattedOutput_NoFlags_InvalidFile(t *testing.T) {
+	filePath := "test1.txt"
+	expected := "0 0 0 test1.txt"
+	actual := getFormattedOutput([]string{filePath})
+	if actual != expected {
+		t.Errorf("Expected %s, got %s", expected, actual)
+	}
+}
