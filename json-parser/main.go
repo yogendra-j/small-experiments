@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -33,15 +34,21 @@ func getFileReader(filepath *string) (*bufio.Reader, error) {
 }
 
 func jsonParser(reader *bufio.Reader) bool {
+	return seekToCharSkippingWhitespace('{', reader) && seekToCharSkippingWhitespace('}', reader)
+}
+
+func seekToCharSkippingWhitespace(char byte, reader *bufio.Reader) bool {
 	for {
-		_, err := reader.ReadBytes('{')
-		if err != nil {
-			if err == bufio.ErrBufferFull {
-				continue
-			}
+		bytes, err := reader.ReadBytes(char)
+		trimmedBytes := strings.TrimSpace(string(bytes))
+		if len(trimmedBytes) != 1 {
 			return false
 		}
-		return true
-
+		if err != nil && err != bufio.ErrBufferFull {
+			return false
+		} else if err == bufio.ErrBufferFull {
+			continue
+		}
+		return char == trimmedBytes[0]
 	}
 }
