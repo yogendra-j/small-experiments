@@ -17,10 +17,9 @@ func TestJsonParser_EmptyValidJson(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		json := []byte(test.input)
-		reader := bufio.NewReader(bytes.NewReader(json))
-
-		result := jsonParser(reader)
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
 
 		if !result {
 			t.Errorf("Failed for: '%v'", test.input)
@@ -40,10 +39,9 @@ func TestJsonParser_EmptyInvalidJson(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		json := []byte(test.input)
-		reader := bufio.NewReader(bytes.NewReader(json))
-
-		result := jsonParser(reader)
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
 
 		if result {
 			t.Errorf("Failed for: '%v'", test.input)
@@ -51,27 +49,66 @@ func TestJsonParser_EmptyInvalidJson(t *testing.T) {
 	}
 }
 
-func TestSeekToCharSkippingWhitespace(t *testing.T) {
+func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 	tests := []struct {
 		input    string
-		char     byte
 		expected bool
 	}{
-		{"{}", '{', true},
-		{"{ }", '{', true},
-		{"{ \n}", '\n', false},
-		{"  	{ \n}", ' ', false},
-		{"  	t{ \n}", 't', true},
+		{`{"key": "value"}`, true},
+		{`{"key": "value" }`, true},
+		{`{"key": "value" } `, true},
+		{`{"key": "value" }  `, true},
+		{`{"key"\n\n : \n\n\t "value" }  `, true},
+		{`{"key"  : "value" `, false},
+		{`{"key": "value `, false},
+		{`{"key": "value} `, false},
+		{`{"key": "value } `, false},
+		{`{key": "value"}`, false},
+		{`{"key: "value"}`, false},
+		{`{"key": value"}`, false},
+		{`{"key" "value"}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+
+}
+
+func TestSeekToNextNonEmptyChar(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected rune
+	}{
+		{" {}", '{'},
+		{"{ }", '{'},
+		{"{ \n} ", '{'},
+		{"  	\n \t{s dfdf sdf\n} ", '{'},
+		{"  	\n \ts{s dfdf sdf\n} ", 's'},
+		{"", 0},
+		{" ", 0},
+		{"  ", 0},
+		{"\n", 0},
+		{"\n\n", 0},
+		{"\t", 0},
+		{"\t\t", 0},
 	}
 
 	for _, test := range tests {
 		json := []byte(test.input)
-		reader := bufio.NewReader(bytes.NewReader(json))
+		scanner := bufio.NewScanner(bytes.NewReader(json))
+		scanner.Split(bufio.ScanRunes)
 
-		result := seekToCharSkippingWhitespace(test.char, reader)
+		result, _ := seekToNextNonEmptyRune(scanner)
 
 		if result != test.expected {
-			t.Errorf("Failed for: '%v'", test.input)
+			t.Errorf("Failed for: '%v'; actual: '%v'", test.input, result)
 		}
 	}
 }

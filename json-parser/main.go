@@ -4,19 +4,21 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 func main() {
 	filepath := os.Args[1]
 
-	reader, err := getFileReader(&filepath)
+	scanner, file, err := getRuneScanner(&filepath)
+	defer file.Close()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	if jsonParser(reader) {
+	if jsonParser(scanner) {
 		fmt.Println("Valid JSON")
 		os.Exit(0)
 	} else {
@@ -25,30 +27,35 @@ func main() {
 	}
 }
 
-func getFileReader(filepath *string) (*bufio.Reader, error) {
+func getRuneScanner(filepath *string) (*bufio.Scanner, *os.File, error) {
 	file, err := os.Open(*filepath)
 	if err != nil {
-		return nil, err
+		return nil, file, err
 	}
-	return bufio.NewReaderSize(file, 1024), nil
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanRunes)
+	return scanner, file, nil
 }
 
-func jsonParser(reader *bufio.Reader) bool {
-	return seekToCharSkippingWhitespace('{', reader) && seekToCharSkippingWhitespace('}', reader)
+func jsonParser(scanner *bufio.Scanner) bool {
+	if r, err := seekToNextNonEmptyRune(scanner); r != '{' || err != nil {
+		return false
+	}
+	if r, err := seekToNextNonEmptyRune(scanner); r != '}' || err != nil {
+		return false
+	}
+
+	return true
+
 }
 
-func seekToCharSkippingWhitespace(char byte, reader *bufio.Reader) bool {
-	for {
-		bytes, err := reader.ReadBytes(char)
-		trimmedBytes := strings.TrimSpace(string(bytes))
-		if len(trimmedBytes) != 1 {
-			return false
+func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if !unicode.IsSpace(r) {
+			return r, nil
 		}
-		if err != nil && err != bufio.ErrBufferFull {
-			return false
-		} else if err == bufio.ErrBufferFull {
-			continue
-		}
-		return char == trimmedBytes[0]
 	}
+	return 0, scanner.Err()
 }
