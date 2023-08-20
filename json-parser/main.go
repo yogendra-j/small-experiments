@@ -42,7 +42,38 @@ func jsonParser(scanner *bufio.Scanner) bool {
 		return false
 	}
 	if r, err := seekToNextNonEmptyRune(scanner); r != '}' || err != nil {
-		return false
+		if r != '"' {
+			return false
+		}
+		for scanner.Scan() {
+			str := scanner.Text()
+			r, _ := utf8.DecodeRuneInString(str)
+			if r == '"' {
+				break
+			}
+		}
+		if scanner.Err() != nil {
+			return false
+		}
+		if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
+			return false
+		}
+		if r, err := seekToNextNonEmptyRune(scanner); r != '"' || err != nil {
+			return false
+		}
+		for scanner.Scan() {
+			str := scanner.Text()
+			r, _ := utf8.DecodeRuneInString(str)
+			if r == '"' {
+				break
+			}
+		}
+		if scanner.Err() != nil {
+			return false
+		}
+		if r, err := seekToNextNonEmptyRune(scanner); r != '}' || err != nil {
+			return false
+		}
 	}
 
 	return true
