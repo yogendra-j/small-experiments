@@ -35,6 +35,7 @@ func TestJsonParser_EmptyInvalidJson(t *testing.T) {
 		{"  "},
 		{"{  "},
 		{"  }"},
+		{"{,  }"},
 		{"\n\n\n \n ddddddddddddddddddddddddddddddddddddddddddddddddddddd fdffffffffffffffffffff dfffffffffffffffdfdfdfdfdfddddddddddddddddddddddfdfdf dfdfdfdfefujdskgjhfjghjfhgjsfhgljs jklghsjkhgjshgjhsljghshgjsfhklgjhsfjghsjfhglsjhgjlhsfjlghsjlghsjhglshgljdlghaifghoaidgfladgfghfkgsghyogendras jaiswal test log input ect \n\n"},
 	}
 
@@ -58,10 +59,12 @@ func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 		{`{"key": "value" }`, true},
 		{`{"key": "value" } `, true},
 		{`{"key": "value" }  `, true},
+		{`{,"key": "value" } `, false},
 		{`{"key"
 		
 		: 
-			 "value" }  `, true},
+			 "value"
+			 , "k": "v" }  `, true},
 		{`{"key"  : "value" `, false},
 		{`{"key": "value `, false},
 		{`{"key": "value} `, false},
@@ -71,6 +74,40 @@ func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 		{`{"key: "value"}`, false},
 		{`{"key": value"}`, false},
 		{`{"key" "value"}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+
+}
+
+func TestJsonParser_WithMultipleStringKeyValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": "value", "key2" : "val 2  "}`, true},
+		{`{"key": "value","key2" : "val 2  " }`, true},
+		{`{
+			"abc": "def" , 
+		"ghi" : "jkl  " 
+		} `, true},
+		{`{"key": "value", }  `, false},
+		{`{
+			"key": "value",
+		"key2" : "val 2  " ,
+		} `, false},
+		{`{
+			"key": "value",
+		key2 : "val 2  "
+		} `, false},
 	}
 
 	for _, test := range tests {

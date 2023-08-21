@@ -41,10 +41,16 @@ func jsonParser(scanner *bufio.Scanner) bool {
 	if r, err := seekToNextNonEmptyRune(scanner); r != '{' || err != nil {
 		return false
 	}
-	if r, err := seekToNextNonEmptyRune(scanner); r != '}' || err != nil {
-		if r != '"' {
-			return false
-		}
+
+	return parseAllKeyValues(scanner)
+
+}
+
+func parseAllKeyValues(scanner *bufio.Scanner) bool {
+	if r, _ := seekToNextNonEmptyRune(scanner); r == '}' {
+		return true
+	}
+	for r, _ := utf8.DecodeLastRuneInString(scanner.Text()); r == '"'; r, _ = utf8.DecodeLastRuneInString(scanner.Text()) {
 		for scanner.Scan() {
 			str := scanner.Text()
 			r, _ := utf8.DecodeRuneInString(str)
@@ -71,13 +77,14 @@ func jsonParser(scanner *bufio.Scanner) bool {
 		if scanner.Err() != nil {
 			return false
 		}
-		if r, err := seekToNextNonEmptyRune(scanner); r != '}' || err != nil {
-			return false
+		if r, _ := seekToNextNonEmptyRune(scanner); r == ',' {
+			r, _ = seekToNextNonEmptyRune(scanner)
+			if r == '}' {
+				return false
+			}
 		}
 	}
-
-	return true
-
+	return scanner.Text() == "}"
 }
 
 func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
