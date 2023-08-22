@@ -9,8 +9,15 @@ import (
 )
 
 func main() {
-	filepath := os.Args[1]
-
+	filepath := ""
+	if len(os.Args) < 2 {
+		// file name from stdin
+		scanner := bufio.NewScanner(os.Stdin)
+		scanner.Scan()
+		filepath = scanner.Text()
+	} else {
+		filepath = os.Args[1]
+	}
 	scanner, file, err := getRuneScanner(&filepath)
 	defer file.Close()
 	if err != nil {
@@ -42,7 +49,10 @@ func jsonParser(scanner *bufio.Scanner) bool {
 		return false
 	}
 
-	return parseObject(scanner)
+	if !parseObject(scanner) {
+		return false
+	}
+	return scanner.Text() == ""
 
 }
 
