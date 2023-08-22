@@ -118,7 +118,7 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 		if !parseNull(scanner) {
 			return false
 		}
-	case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
+	case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-':
 		if !parseNumber(scanner) {
 			return false
 		}
@@ -159,12 +159,12 @@ func parseNumber(scanner *bufio.Scanner) bool {
 	for scanner.Scan() {
 		str := scanner.Text()
 		r, _ := utf8.DecodeRuneInString(str)
-		if !unicode.IsDigit(r) {
+		if !unicode.IsDigit(r) && r != '.' && r != '-' {
 			break
 		}
 		token += str
 	}
-	return scanner.Err() == nil && token != ""
+	return scanner.Err() == nil && isValidNumber(token)
 }
 
 func parseNull(scanner *bufio.Scanner) bool {
@@ -191,4 +191,36 @@ func parseBoolean(scanner *bufio.Scanner) bool {
 		token += str
 	}
 	return scanner.Err() == nil && (token == "true" || token == "false")
+}
+
+func isValidNumber(token string) bool {
+	if len(token) > 0 && token[0] == '-' {
+		token = token[1:]
+	}
+	if len(token) == 0 {
+		return false
+	}
+	if token[0] == '0' && len(token) > 1 {
+		return false
+	}
+	if token[len(token)-1] == '.' {
+		return false
+	}
+	if count := countOccurrences(token, '.'); count > 1 {
+		return false
+	}
+	if count := countOccurrences(token, '-'); count > 0 {
+		return false
+	}
+	return true
+}
+
+func countOccurrences(token string, char rune) int {
+	count := 0
+	for _, c := range token {
+		if c == char {
+			count++
+		}
+	}
+	return count
 }

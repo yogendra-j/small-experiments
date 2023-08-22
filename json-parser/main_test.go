@@ -222,7 +222,7 @@ func TestJsonParser_WithSingleNullValue(t *testing.T) {
 
 }
 
-func TestJsonParser_WithSingleWholeNumberValue(t *testing.T) {
+func TestJsonParser_WithSingleIntegerValue(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected bool
@@ -231,15 +231,56 @@ func TestJsonParser_WithSingleWholeNumberValue(t *testing.T) {
 		{`{"key": 101 }  `, true},
 		{`{"key ": 101
 		} `, true},
+		{`{"key": -101}`, true},
+		{`{"key": -101 }  `, true},
+		{`{"key ": -101
+		} `, true},
+		{`{"key": --101 }  `, false},
+		{`{"key": -10-1 }  `, false},
 		{`{,"key": 101 } `, false},
 		{`{"key
 		": 101 } `, false},
 		{`{"key"  : 101" `, false},
 		{`{"key": 101 `, false},
-		{`{key": 101
+		{`{key": -101
 		"}`, false},
 		{`{"key: 101"}`, false},
 		{`{"key" 101"}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+}
+
+func TestJsonParser_WithSingleFractionValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": 101.254}`, true},
+		{`{"key": 101.0 }  `, true},
+		{`{"key ": 101.55555
+		} `, true},
+		{`{"key": 101.0. }  `, false},
+		{`{"key": 101.0.2 }  `, false},
+		{`{"key": 101. }  `, false},
+		{`{,"key": .5 } `, false},
+		{`{,"key": . } `, false},
+		{`{"key
+		": 101.2 } `, false},
+		{`{"key"  : 101.2.2" `, false},
+		{`{"key": 101.2 `, false},
+		{`{key": 101.2
+		"}`, false},
+		{`{"key: 101.2"}`, false},
+		{`{"key" 101.2"}`, false},
 	}
 
 	for _, test := range tests {
