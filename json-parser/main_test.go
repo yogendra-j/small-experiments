@@ -190,6 +190,38 @@ func TestJsonParser_WithSingleBoolKeyValue(t *testing.T) {
 
 }
 
+func TestJsonParser_WithSingleNullValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": null}`, true},
+		{`{"key": null }  `, true},
+		{`{"key ": null
+		} `, true},
+		{`{,"key": null } `, false},
+		{`{"key
+		": null } `, false},
+		{`{"key"  : null" `, false},
+		{`{"key": null `, false},
+		{`{key": null
+		"}`, false},
+		{`{"key: null"}`, false},
+		{`{"key" null"}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+
+}
+
 // func TestJsonParser_WithNumBoolStringNull(t *testing.T) {
 // 	tests := []struct {
 // 		input    string

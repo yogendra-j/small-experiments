@@ -146,6 +146,18 @@ func parseNumber(scanner *bufio.Scanner) bool {
 }
 
 func parseNull(scanner *bufio.Scanner) bool {
+	token := scanner.Text()
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if !unicode.IsLetter(r) {
+			break
+		}
+		token += str
+		if token == "null" {
+			return true
+		}
+	}
 	return false
 }
 
