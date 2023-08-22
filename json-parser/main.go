@@ -75,26 +75,13 @@ func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
 	return 0, scanner.Err()
 }
 
-func parseString(scanner *bufio.Scanner) bool {
-	if scanner.Text() != `"` {
-		return false
-	}
-	for scanner.Scan() {
-		str := scanner.Text()
-		r, _ := utf8.DecodeRuneInString(str)
-		if r == '"' {
-			break
-		}
-		if r == '\n' {
-			return false
-		}
-	}
-	return scanner.Err() == nil
-}
-
 func commaOrEnd(scanner *bufio.Scanner) bool {
-	if r, _ := seekToNextNonEmptyRune(scanner); r == ',' {
+	r, _ := utf8.DecodeLastRuneInString(scanner.Text())
+	if unicode.IsSpace(r) {
 		r, _ = seekToNextNonEmptyRune(scanner)
+	}
+	if r == ',' {
+		r, _ := seekToNextNonEmptyRune(scanner)
 		if r == '}' {
 			return false
 		}
@@ -106,7 +93,7 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 	if !parseString(scanner) {
 		return false
 	}
-	if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
+	if scanner.Err() != nil || !colon(scanner) {
 		return false
 	}
 
@@ -141,8 +128,43 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 	return true
 }
 
+func parseString(scanner *bufio.Scanner) bool {
+	if scanner.Text() != `"` {
+		return false
+	}
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if r == '\n' {
+			return false
+		}
+		if r == '"' {
+			scanner.Scan()
+			break
+		}
+	}
+	return scanner.Err() == nil
+}
+
+func colon(scanner *bufio.Scanner) bool {
+	r, _ := utf8.DecodeRuneInString(scanner.Text())
+	if unicode.IsSpace(r) {
+		r, _ = seekToNextNonEmptyRune(scanner)
+	}
+	return scanner.Err() == nil || r == ':'
+}
+
 func parseNumber(scanner *bufio.Scanner) bool {
-	return false
+	token := scanner.Text()
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if !unicode.IsDigit(r) {
+			break
+		}
+		token += str
+	}
+	return scanner.Err() == nil && token != ""
 }
 
 func parseNull(scanner *bufio.Scanner) bool {
@@ -154,11 +176,8 @@ func parseNull(scanner *bufio.Scanner) bool {
 			break
 		}
 		token += str
-		if token == "null" {
-			return true
-		}
 	}
-	return false
+	return scanner.Err() == nil && token == "null"
 }
 
 func parseBoolean(scanner *bufio.Scanner) bool {
@@ -170,9 +189,6 @@ func parseBoolean(scanner *bufio.Scanner) bool {
 			break
 		}
 		token += str
-		if token == "true" || token == "false" {
-			return true
-		}
 	}
-	return false
+	return scanner.Err() == nil && (token == "true" || token == "false")
 }
