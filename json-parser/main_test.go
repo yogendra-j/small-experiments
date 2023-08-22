@@ -372,3 +372,51 @@ func TestJsonParser_WithNumBoolStringNull(t *testing.T) {
 	}
 
 }
+
+func TestJsonParser_WithArrayValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": []}`, true},
+		{`{"key": [] }  `, true},
+		{`{"key ": []
+		} `, true},
+		{`{"key": [1,2,3]}`, true},
+		{`{"key": [1]}`, true},
+		{`{"key": [1,2,3] }  `, true},
+		{`{"key ": [1,2,3]
+		} `, true},
+		{`{"key": [1,2,3] }  `, true},
+		{`{"key": [1,2,3,[],"sddf",{}] }  `, true},
+		{`{"key": [1,2,3,[[1,{}]],"sddf",{"k" : [-1 , [ 4 , 4, []]]}] }  `, true},
+		{`{"key": [1,2,3,[[1,{}]],"sddf",{
+			"k" : [-1 , [ 4 , 4, [
+
+			]]]
+			}] }  `, true},
+		{`{"key": [1,2,3,[[1,{}]],"sddf",{
+				"k" : [-1 , [ 4 , 4, [
+	
+				]]]
+				}]   `, false},
+		{`{"key": [1,2,3,[[1,{}]],"sddf",{
+					"k" : [-1 , [ 4 , 4, [
+		
+					]]
+					}] }  `, false},
+		{`{"key": [1,2,3,]}`, false},
+		{`{"key": [1,2,3,] }  `, false},
+		{`{"key": [1,]}`, false},
+		{`{"key": [,]}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+}

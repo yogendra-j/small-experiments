@@ -58,7 +58,7 @@ func parseObject(scanner *bufio.Scanner) bool {
 		if !parseKeyValuePair(scanner) {
 			return false
 		}
-		if !commaOrEnd(scanner) {
+		if !commaOrEnd(scanner, '}') {
 			return false
 		}
 	}
@@ -80,14 +80,14 @@ func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
 	return 0, scanner.Err()
 }
 
-func commaOrEnd(scanner *bufio.Scanner) bool {
+func commaOrEnd(scanner *bufio.Scanner, endToken rune) bool {
 	r, _ := utf8.DecodeLastRuneInString(scanner.Text())
 	if unicode.IsSpace(r) {
 		r, _ = seekToNextNonEmptyRune(scanner)
 	}
 	if r == ',' {
 		r, _ := seekToNextNonEmptyRune(scanner)
-		if r == '}' {
+		if r == endToken {
 			return false
 		}
 	}
@@ -101,11 +101,34 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 	if scanner.Err() != nil || !colon(scanner) {
 		return false
 	}
-
-	r, err := seekToNextNonEmptyRune(scanner)
+	_, err := seekToNextNonEmptyRune(scanner)
 	if err != nil {
 		return false
 	}
+
+	return parseValue(scanner)
+}
+
+func parseString(scanner *bufio.Scanner) bool {
+	if scanner.Text() != `"` {
+		return false
+	}
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if r == '\n' {
+			return false
+		}
+		if r == '"' {
+			scanner.Scan()
+			break
+		}
+	}
+	return scanner.Err() == nil
+}
+
+func parseValue(scanner *bufio.Scanner) bool {
+	r, _ := utf8.DecodeLastRuneInString(scanner.Text())
 	switch r {
 	case '"':
 		if !parseString(scanner) {
@@ -127,28 +150,14 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 		if !parseNumber(scanner) {
 			return false
 		}
+	case '[':
+		if !parseArray(scanner) {
+			return false
+		}
 	default:
 		return false
 	}
 	return true
-}
-
-func parseString(scanner *bufio.Scanner) bool {
-	if scanner.Text() != `"` {
-		return false
-	}
-	for scanner.Scan() {
-		str := scanner.Text()
-		r, _ := utf8.DecodeRuneInString(str)
-		if r == '\n' {
-			return false
-		}
-		if r == '"' {
-			scanner.Scan()
-			break
-		}
-	}
-	return scanner.Err() == nil
 }
 
 func colon(scanner *bufio.Scanner) bool {
@@ -228,4 +237,27 @@ func countOccurrences(token string, char rune) int {
 		}
 	}
 	return count
+}
+
+func parseArray(scanner *bufio.Scanner) bool {
+	if scanner.Text() != "[" {
+		return false
+	}
+	if r, _ := seekToNextNonEmptyRune(scanner); r == ']' {
+		seekToNextNonEmptyRune(scanner)
+		return true
+	}
+	for scanner.Text() != "]" {
+		if !parseValue(scanner) {
+			return false
+		}
+		if !commaOrEnd(scanner, ']') {
+			return false
+		}
+	}
+	if scanner.Text() != "]" {
+		return false
+	}
+	seekToNextNonEmptyRune(scanner)
+	return true
 }
