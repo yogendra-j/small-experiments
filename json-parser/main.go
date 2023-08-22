@@ -42,23 +42,19 @@ func jsonParser(scanner *bufio.Scanner) bool {
 		return false
 	}
 
-	return parseAllKeyValues(scanner)
+	return parseObject(scanner)
 
 }
 
-func parseAllKeyValues(scanner *bufio.Scanner) bool {
+func parseObject(scanner *bufio.Scanner) bool {
+	if scanner.Text() != "{" {
+		return false
+	}
 	if r, _ := seekToNextNonEmptyRune(scanner); r == '}' {
 		return true
 	}
 	for r, _ := utf8.DecodeLastRuneInString(scanner.Text()); r == '"'; r, _ = utf8.DecodeLastRuneInString(scanner.Text()) {
-		for scanner.Scan() {
-			str := scanner.Text()
-			r, _ := utf8.DecodeRuneInString(str)
-			if r == '"' {
-				break
-			}
-		}
-		if scanner.Err() != nil {
+		if !parseString(scanner) {
 			return false
 		}
 		if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
@@ -96,4 +92,18 @@ func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
 		}
 	}
 	return 0, scanner.Err()
+}
+
+func parseString(scanner *bufio.Scanner) bool {
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if r == '"' {
+			break
+		}
+		if r == '\n' {
+			return false
+		}
+	}
+	return scanner.Err() == nil
 }

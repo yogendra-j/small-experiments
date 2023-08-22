@@ -6,6 +6,38 @@ import (
 	"testing"
 )
 
+func TestSeekToNextNonEmptyChar(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected rune
+	}{
+		{" {}", '{'},
+		{"{ }", '{'},
+		{"{ \n} ", '{'},
+		{"  	\n \t{s dfdf sdf\n} ", '{'},
+		{"  	\n \ts{s dfdf sdf\n} ", 's'},
+		{"", 0},
+		{" ", 0},
+		{"  ", 0},
+		{"\n", 0},
+		{"\n\n", 0},
+		{"\t", 0},
+		{"\t\t", 0},
+	}
+
+	for _, test := range tests {
+		json := []byte(test.input)
+		scanner := bufio.NewScanner(bytes.NewReader(json))
+		scanner.Split(bufio.ScanRunes)
+
+		result, _ := seekToNextNonEmptyRune(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'; actual: '%v'", test.input, result)
+		}
+	}
+}
+
 func TestJsonParser_EmptyValidJson(t *testing.T) {
 	tests := []struct {
 		input string
@@ -60,6 +92,8 @@ func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 		{`{"key": "value" } `, true},
 		{`{"key": "value" }  `, true},
 		{`{,"key": "value" } `, false},
+		{`{"key
+		": "value" } `, false},
 		{`{"key"
 		
 		: 
@@ -120,36 +154,4 @@ func TestJsonParser_WithMultipleStringKeyValue(t *testing.T) {
 		}
 	}
 
-}
-
-func TestSeekToNextNonEmptyChar(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected rune
-	}{
-		{" {}", '{'},
-		{"{ }", '{'},
-		{"{ \n} ", '{'},
-		{"  	\n \t{s dfdf sdf\n} ", '{'},
-		{"  	\n \ts{s dfdf sdf\n} ", 's'},
-		{"", 0},
-		{" ", 0},
-		{"  ", 0},
-		{"\n", 0},
-		{"\n\n", 0},
-		{"\t", 0},
-		{"\t\t", 0},
-	}
-
-	for _, test := range tests {
-		json := []byte(test.input)
-		scanner := bufio.NewScanner(bytes.NewReader(json))
-		scanner.Split(bufio.ScanRunes)
-
-		result, _ := seekToNextNonEmptyRune(scanner)
-
-		if result != test.expected {
-			t.Errorf("Failed for: '%v'; actual: '%v'", test.input, result)
-		}
-	}
 }
