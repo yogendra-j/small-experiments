@@ -294,6 +294,38 @@ func TestJsonParser_WithSingleFractionValue(t *testing.T) {
 	}
 }
 
+func TestJsonParser_WithNestedObjectValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": {}}`, true},
+		{`{"key": {} }  `, true},
+		{`{"key ": {}
+		} `, true},
+		{`{"key": {"key2": "value2"}}`, true},
+		{`{"key": {"key2": "value2"} }  `, true},
+		{`{"key ": {"key2": "value2"}
+		} `, true},
+		{`{"key": {"key2": "value2"} }  `, true},
+		{`{"key": {"key2": {"key3": "value3"}}}`, true},
+		{`{"key": {"key2": {}} }  `, true},
+		{`{"key": {"key2": {"key3: "value3"}}}`, false},
+		{`{"key": {"key2": {} }  `, false},
+		{`{"key": {"key2": {"key3": 0.003.1}}}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+}
+
 func TestJsonParser_WithNumBoolStringNull(t *testing.T) {
 	tests := []struct {
 		input    string

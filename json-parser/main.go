@@ -51,6 +51,7 @@ func parseObject(scanner *bufio.Scanner) bool {
 		return false
 	}
 	if r, _ := seekToNextNonEmptyRune(scanner); r == '}' {
+		seekToNextNonEmptyRune(scanner)
 		return true
 	}
 	for r, _ := utf8.DecodeLastRuneInString(scanner.Text()); r == '"'; r, _ = utf8.DecodeLastRuneInString(scanner.Text()) {
@@ -61,7 +62,11 @@ func parseObject(scanner *bufio.Scanner) bool {
 			return false
 		}
 	}
-	return scanner.Text() == "}"
+	if scanner.Text() != "}" {
+		return false
+	}
+	seekToNextNonEmptyRune(scanner)
+	return true
 }
 
 func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
