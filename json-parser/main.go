@@ -54,30 +54,11 @@ func parseObject(scanner *bufio.Scanner) bool {
 		return true
 	}
 	for r, _ := utf8.DecodeLastRuneInString(scanner.Text()); r == '"'; r, _ = utf8.DecodeLastRuneInString(scanner.Text()) {
-		if !parseString(scanner) {
+		if !parseKeyValuePair(scanner) {
 			return false
 		}
-		if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
+		if !commaOrEnd(scanner) {
 			return false
-		}
-		if r, err := seekToNextNonEmptyRune(scanner); r != '"' || err != nil {
-			return false
-		}
-		for scanner.Scan() {
-			str := scanner.Text()
-			r, _ := utf8.DecodeRuneInString(str)
-			if r == '"' {
-				break
-			}
-		}
-		if scanner.Err() != nil {
-			return false
-		}
-		if r, _ := seekToNextNonEmptyRune(scanner); r == ',' {
-			r, _ = seekToNextNonEmptyRune(scanner)
-			if r == '}' {
-				return false
-			}
 		}
 	}
 	return scanner.Text() == "}"
@@ -95,6 +76,9 @@ func seekToNextNonEmptyRune(scanner *bufio.Scanner) (rune, error) {
 }
 
 func parseString(scanner *bufio.Scanner) bool {
+	if scanner.Text() != `"` {
+		return false
+	}
 	for scanner.Scan() {
 		str := scanner.Text()
 		r, _ := utf8.DecodeRuneInString(str)
@@ -106,4 +90,30 @@ func parseString(scanner *bufio.Scanner) bool {
 		}
 	}
 	return scanner.Err() == nil
+}
+
+func commaOrEnd(scanner *bufio.Scanner) bool {
+	if r, _ := seekToNextNonEmptyRune(scanner); r == ',' {
+		r, _ = seekToNextNonEmptyRune(scanner)
+		if r == '}' {
+			return false
+		}
+	}
+	return true
+}
+
+func parseKeyValuePair(scanner *bufio.Scanner) bool {
+	if !parseString(scanner) {
+		return false
+	}
+	if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
+		return false
+	}
+	if r, err := seekToNextNonEmptyRune(scanner); r != '"' || err != nil {
+		return false
+	}
+	if !parseString(scanner) {
+		return false
+	}
+	return true
 }

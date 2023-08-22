@@ -92,6 +92,8 @@ func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 		{`{"key": "value" } `, true},
 		{`{"key": "value" }  `, true},
 		{`{,"key": "value" } `, false},
+		{`{"key ": "va
+		lue" } `, false},
 		{`{"key
 		": "value" } `, false},
 		{`{"key"
