@@ -157,3 +157,82 @@ func TestJsonParser_WithMultipleStringKeyValue(t *testing.T) {
 	}
 
 }
+
+func TestJsonParser_WithSingleBoolKeyValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": true}`, true},
+		{`{"key": true }  `, true},
+		{`{"key ": true
+		} `, true},
+		{`{,"key": true } `, false},
+		{`{"key
+		": true } `, false},
+		{`{"key"  : true" `, false},
+		{`{"key": true `, false},
+		{`{key": true
+		"}`, false},
+		{`{"key: true"}`, false},
+		{`{"key" true"}`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+
+}
+
+// func TestJsonParser_WithNumBoolStringNull(t *testing.T) {
+// 	tests := []struct {
+// 		input    string
+// 		expected bool
+// 	}{
+// 		{`{
+// 			"key1": true,
+// 			"key2": false,
+// 			"key3": null,
+// 			"key4": "value",
+// 			"key5": 101
+// 		  }`, true},
+// 		{`{
+// 			"key1": True,
+// 			"key2": false,
+// 			"key3": null,
+// 			"key4": "value",
+// 			"key5": 101
+// 		  }`, false},
+// 		{`{
+// 			"key1": true,
+// 			"key2": false,
+// 			"key3": nu ll,
+// 			"key4": "value",
+// 			"key5": 101
+// 		  }`, false},
+// 		{`{
+// 			"key1": true,
+// 			"key2": falSe,
+// 			"key3": null,
+// 			"key4": "value",
+// 			"key5": 101
+// 		  } `, false},
+// 	}
+
+// 	for _, test := range tests {
+// 		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+// 		scanner.Split(bufio.ScanRunes)
+// 		result := jsonParser(scanner)
+
+// 		if result != test.expected {
+// 			t.Errorf("Failed for: '%v'", test.input)
+// 		}
+// 	}
+
+// }

@@ -109,11 +109,58 @@ func parseKeyValuePair(scanner *bufio.Scanner) bool {
 	if r, err := seekToNextNonEmptyRune(scanner); r != ':' || err != nil {
 		return false
 	}
-	if r, err := seekToNextNonEmptyRune(scanner); r != '"' || err != nil {
+
+	r, err := seekToNextNonEmptyRune(scanner)
+	if err != nil {
 		return false
 	}
-	if !parseString(scanner) {
+	switch r {
+	case '"':
+		if !parseString(scanner) {
+			return false
+		}
+	case '{':
+		if !parseObject(scanner) {
+			return false
+		}
+	case 't', 'f':
+		if !parseBoolean(scanner) {
+			return false
+		}
+	case 'n':
+		if !parseNull(scanner) {
+			return false
+		}
+	case '1', '2', '3', '4', '5', '6', '7', '8', '9', '0':
+		if !parseNumber(scanner) {
+			return false
+		}
+	default:
 		return false
 	}
 	return true
+}
+
+func parseNumber(scanner *bufio.Scanner) bool {
+	return false
+}
+
+func parseNull(scanner *bufio.Scanner) bool {
+	return false
+}
+
+func parseBoolean(scanner *bufio.Scanner) bool {
+	token := scanner.Text()
+	for scanner.Scan() {
+		str := scanner.Text()
+		r, _ := utf8.DecodeRuneInString(str)
+		if !unicode.IsLetter(r) {
+			break
+		}
+		token += str
+		if token == "true" || token == "false" {
+			return true
+		}
+	}
+	return false
 }
