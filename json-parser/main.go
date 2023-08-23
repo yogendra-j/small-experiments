@@ -254,7 +254,7 @@ func isValidNumber(token string) bool {
 	if len(token) == 0 {
 		return false
 	}
-	if token[0] == '0' && len(token) > 1 {
+	if token[0] == '0' && len(token) > 1 && token[1] != '.' {
 		return false
 	}
 	if token[len(token)-1] == '.' {

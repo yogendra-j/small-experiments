@@ -270,6 +270,7 @@ func TestJsonParser_WithSingleFractionValue(t *testing.T) {
 		{`{"key": 101.0 }  `, true},
 		{`{"key ": 101.55555
 		} `, true},
+		{`{"key": 0.5 } `, true},
 		{`{"key": 101.0. }  `, false},
 		{`{"key": 101.0.2 }  `, false},
 		{`{"key": 101. }  `, false},
