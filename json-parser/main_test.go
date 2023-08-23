@@ -87,10 +87,14 @@ func TestJsonParser_WithOneStringKeyValue(t *testing.T) {
 		input    string
 		expected bool
 	}{
+		{`{"key": "\\"}`, true},
+		{`{"key": "\""}`, true},
+		{`{"key": "\\\""}`, true},
 		{`{"key": "value"}`, true},
 		{`{"key": "value" }`, true},
 		{`{"key": "value" } `, true},
 		{`{"key": "escaped \t tab" } `, true},
+		{`{"key": "escaped quote \"" } `, true},
 		{`{"key": "unescaped	tab" } `, false},
 		{`{"key": "value" }  `, true},
 		{`{,"key": "value" } `, false},
@@ -297,6 +301,50 @@ func TestJsonParser_WithSingleFractionValue(t *testing.T) {
 	}
 }
 
+func TestJsonParser_WithSingleExpValue(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`{"key": 101e10}`, true},
+		{`{"key": 101e+10 }  `, true},
+		{`{"key": 101e+010 }  `, true},
+		{`{"key": 101e-010 }  `, true},
+		{`{"key": -1.01e-00010 }  `, true},
+		{`{"key ": 101e-10
+		} `, true},
+		{`{"key": 0.5e10 } `, true},
+		{`{"key": 0.5e1e0 } `, false},
+		{`{"key": 0.5e1E0 } `, false},
+		{`{"key": 101e10. }  `, false},
+		{`{"key": 101e10.2 }  `, false},
+		{`{"key": 101e }  `, false},
+		{`{,"key": .5e10 } `, false},
+
+		{`{"key": 101E+10 }  `, true},
+		{`{"key": 101E10}`, true},
+		{`{"key": 101E+010 }  `, true},
+		{`{"key": 101E-010 }  `, true},
+		{`{"key": -1.01E-00010 }  `, true},
+		{`{"key ": 101E-10
+		} `, true},
+		{`{"key": 0.5E10 } `, true},
+		{`{"key": 101E10. }  `, false},
+		{`{"key": 101E10.2 }  `, false},
+		{`{"key": 101E }  `, false},
+		{`{,"key": .5E10 } `, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+}
 func TestJsonParser_WithNestedObjectValue(t *testing.T) {
 	tests := []struct {
 		input    string

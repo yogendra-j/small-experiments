@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -130,7 +131,7 @@ func parseString(scanner *bufio.Scanner) bool {
 		if r == '\n' {
 			return false
 		}
-		if r == '"' {
+		if r == '"' && isNotEscaped(token) {
 			scanner.Scan()
 			break
 		}
@@ -147,6 +148,21 @@ func isValidString(token string) bool {
 		}
 	}
 	return true
+}
+
+func isNotEscaped(token string) bool {
+	if len(token) == 0 {
+		return true
+	}
+	count := 0
+	for i := len(token) - 1; i >= 0; i-- {
+		if token[i] == '\\' {
+			count++
+		} else {
+			break
+		}
+	}
+	return count%2 == 0
 }
 
 func isInvalidEscapeCharacter(token string, i int) bool {
@@ -213,7 +229,7 @@ func parseNumber(scanner *bufio.Scanner) bool {
 	for scanner.Scan() {
 		str := scanner.Text()
 		r, _ := utf8.DecodeRuneInString(str)
-		if !unicode.IsDigit(r) && r != '.' && r != '-' {
+		if !unicode.IsDigit(r) && r != '.' && r != '-' && r != 'e' && r != 'E' && r != '+' {
 			break
 		}
 		token += str
@@ -254,17 +270,48 @@ func isValidNumber(token string) bool {
 	if len(token) == 0 {
 		return false
 	}
-	if token[0] == '0' && len(token) > 1 && token[1] != '.' {
+	token = strings.ToLower(token)
+	exp1, exp2 := "", ""
+	if countOccurrences(token, 'e') >= 2 {
 		return false
 	}
-	if token[len(token)-1] == '.' {
+	if countOccurrences(token, 'e') == 1 {
+		exp1, exp2 = strings.Split(token, "e")[0], strings.Split(token, "e")[1]
+		if !isValidPower(exp2) {
+			return false
+		}
+	} else if countOccurrences(token, 'e') == 0 {
+		exp1, exp2 = token, ""
+	}
+	if exp1[0] == '0' && len(exp1) > 1 && exp1[1] != '.' {
 		return false
 	}
-	if count := countOccurrences(token, '.'); count > 1 {
+	if exp1[len(exp1)-1] == '.' {
 		return false
 	}
-	if count := countOccurrences(token, '-'); count > 0 {
+	if countOccurrences(exp1, '.') > 1 {
 		return false
+	}
+	if countOccurrences(exp1, '-') > 0 {
+		return false
+	}
+	return true
+}
+
+func isValidPower(token string) bool {
+	if len(token) == 0 {
+		return false
+	}
+	if token[0] == '+' || token[0] == '-' {
+		token = token[1:]
+	}
+	if len(token) == 0 {
+		return false
+	}
+	for _, c := range token {
+		if !unicode.IsDigit(c) {
+			return false
+		}
 	}
 	return true
 }
