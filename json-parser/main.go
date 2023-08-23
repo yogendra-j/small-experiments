@@ -140,13 +140,31 @@ func parseString(scanner *bufio.Scanner) bool {
 }
 
 func isValidString(token string) bool {
-	//check for invalid escape characters
-	for _, c := range token {
-		if c == '\\' {
+	//check for invalid escape characters (\x etc) and unescaped control characters
+	for i, c := range token {
+		if isUnescapedControlCharacter(c) || isInvalidEscapeCharacter(token, i) {
 			return false
 		}
 	}
 	return true
+}
+
+func isInvalidEscapeCharacter(token string, i int) bool {
+	controlChars := []rune{'"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'}
+	return token[i] == '\\' && i < len(token)-1 && !contains(controlChars, rune(token[i+1]))
+}
+
+func contains[T comparable](arr []T, r T) bool {
+	for _, a := range arr {
+		if a == r {
+			return true
+		}
+	}
+	return false
+}
+
+func isUnescapedControlCharacter(c rune) bool {
+	return unicode.IsControl(c)
 }
 
 func parseValue(scanner *bufio.Scanner) bool {
