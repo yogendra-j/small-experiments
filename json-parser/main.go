@@ -45,11 +45,11 @@ func getRuneScanner(filepath *string) (*bufio.Scanner, *os.File, error) {
 }
 
 func jsonParser(scanner *bufio.Scanner) bool {
-	if r, err := seekToNextNonEmptyRune(scanner); r != '{' || err != nil {
+	if r, err := seekToNextNonEmptyRune(scanner); (r != '{' && r != '[') || err != nil {
 		return false
 	}
 
-	if !parseObject(scanner) {
+	if !parseValue(scanner) {
 		return false
 	}
 	return scanner.Text() == ""
@@ -123,6 +123,7 @@ func parseString(scanner *bufio.Scanner) bool {
 	if scanner.Text() != `"` {
 		return false
 	}
+	token := ""
 	for scanner.Scan() {
 		str := scanner.Text()
 		r, _ := utf8.DecodeRuneInString(str)
@@ -133,8 +134,19 @@ func parseString(scanner *bufio.Scanner) bool {
 			scanner.Scan()
 			break
 		}
+		token += str
 	}
-	return scanner.Err() == nil
+	return scanner.Err() == nil && isValidString(token)
+}
+
+func isValidString(token string) bool {
+	//check for invalid escape characters
+	for _, c := range token {
+		if c == '\\' {
+			return false
+		}
+	}
+	return true
 }
 
 func parseValue(scanner *bufio.Scanner) bool {
@@ -175,7 +187,7 @@ func colon(scanner *bufio.Scanner) bool {
 	if unicode.IsSpace(r) {
 		r, _ = seekToNextNonEmptyRune(scanner)
 	}
-	return scanner.Err() == nil || r == ':'
+	return scanner.Err() == nil && r == ':'
 }
 
 func parseNumber(scanner *bufio.Scanner) bool {

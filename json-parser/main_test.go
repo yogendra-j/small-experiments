@@ -421,13 +421,38 @@ func TestJsonParser_WithArrayValue(t *testing.T) {
 	}
 }
 
-func TestJsonParser_WithRandomValuesAfterValidJson(t *testing.T) {
+func TestJsonParser_EdgeCases(t *testing.T) {
 	tests := []struct {
 		input    string
 		expected bool
 	}{
 		{`{"key": []} } `, false},
 		{`{"key": []}  "dfdf"`, false},
+		{`{"key", 12}`, false},
+		{`["Illegal backslash escape: \x15"]`, false},
+	}
+
+	for _, test := range tests {
+		scanner := bufio.NewScanner(bytes.NewReader([]byte(test.input)))
+		scanner.Split(bufio.ScanRunes)
+
+		result := jsonParser(scanner)
+
+		if result != test.expected {
+			t.Errorf("Failed for: '%v'", test.input)
+		}
+	}
+}
+
+func TestJsonParser_StartsWithArray(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{`[{"key": []} ] `, true},
+		{`[{"key": []},  "dfdf"]`, true},
+		{`[{"key": 12}]`, true},
+		{`["asdas", 12]`, true},
 	}
 
 	for _, test := range tests {
