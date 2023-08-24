@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/heap"
 	"fmt"
 	"os"
 )
@@ -15,7 +16,7 @@ func main() {
 	}
 	defer file.Close()
 
-	fmt.Println(scanner.Text())
+	fmt.Println(buildFreqMap(scanner)["t"])
 }
 
 func getScanner(filePath *string) (*bufio.Scanner, *os.File) {
@@ -36,4 +37,52 @@ func buildFreqMap(scanner *bufio.Scanner) map[string]int {
 		freqMap[char]++
 	}
 	return freqMap
+}
+
+func buildHuffmanTree(freqMap *map[string]int) *node {
+	h := &nodeHeap{}
+	for char, freq := range *freqMap {
+		*h = append(*h, &node{char: char, freq: freq})
+	}
+	heap.Init(h)
+
+	for h.Len() > 1 {
+		n1 := heap.Pop(h).(*node)
+		n2 := heap.Pop(h).(*node)
+		heap.Push(h, &node{char: "", freq: n1.freq + n2.freq, left: n1, right: n2})
+	}
+
+	return heap.Pop(h).(*node)
+}
+
+type node struct {
+	char  string
+	freq  int
+	left  *node
+	right *node
+}
+
+type nodeHeap []*node
+
+func (h nodeHeap) Len() int { return len(h) }
+
+func (h nodeHeap) Less(i, j int) bool {
+	return h[i].freq < h[j].freq
+}
+
+func (h nodeHeap) Swap(i, j int) {
+	h[i], h[j] = h[j], h[i]
+}
+
+func (h *nodeHeap) Push(x interface{}) {
+	*h = append(*h, x.(*node))
+}
+
+func (h *nodeHeap) Pop() interface{} {
+	old := *h
+	n := len(old)
+	x := old[n-1]
+	old[n-1] = nil
+	*h = old[0 : n-1]
+	return x
 }
