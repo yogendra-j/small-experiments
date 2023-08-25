@@ -30,6 +30,16 @@ func getScanner(filePath *string) (*bufio.Scanner, *os.File) {
 	return scanner, file
 }
 
+func getWriter(filePath *string) (*bufio.Writer, *os.File) {
+	file, err := os.Create(*filePath)
+	if err != nil {
+		return nil, nil
+	}
+
+	writer := bufio.NewWriter(file)
+	return writer, file
+}
+
 func buildFreqMap(scanner *bufio.Scanner) map[string]int {
 	freqMap := make(map[string]int, 300)
 	for scanner.Scan() {
@@ -111,4 +121,37 @@ func buildHuffmanTable(tree *node) *map[string]string {
 	}
 
 	return &table
+}
+
+func writeHuffmanTable(table *map[string]string, writer *bufio.Writer) {
+	for char, code := range *table {
+		writer.WriteString(char + "$#" + code + "$#")
+	}
+	writer.WriteString("$#")
+	writer.Flush()
+}
+
+func readAndBuildHuffmanTable(scanner *bufio.Scanner) *map[string]string {
+	table := make(map[string]string)
+	for {
+		chr := readOneCol(scanner)
+		if chr == "" {
+			break
+		}
+		code := readOneCol(scanner)
+		table[chr] = code
+	}
+	return &table
+}
+
+func readOneCol(scanner *bufio.Scanner) string {
+	readBytes := []byte{}
+	for scanner.Scan() {
+		b := scanner.Bytes()
+		if b[len(b)-1] == '#' && len(readBytes) > 0 && readBytes[len(readBytes)-1] == '$' {
+			return string(readBytes[:len(readBytes)-1])
+		}
+		readBytes = append(readBytes, b...)
+	}
+	return ""
 }

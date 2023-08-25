@@ -31,7 +31,7 @@ func TestBuildFreq(t *testing.T) {
 	}
 }
 
-func mapsEqual(a, b map[string]int) (bool, error) {
+func mapsEqual[T1 comparable, T2 comparable](a, b map[T1]T2) (bool, error) {
 	if len(a) != len(b) {
 		return false, fmt.Errorf("lengths differ: got %v, want %v", len(a), len(b))
 	}
@@ -134,5 +134,20 @@ func TestBuildHuffmanTable(t *testing.T) {
 	}
 	if table["a"] != "11101" {
 		t.Errorf("Expected 'a' to have a code of '1101', got %v", table["a"])
+	}
+}
+
+func TestWriteHuffmanTable(t *testing.T) {
+	ogTable := map[string]string{"a": "0", "b": "10", "#": "110", "$": "1110", "e": "1111", " ": "1", "\n": "01", "\t": "001"}
+	strWriter := &strings.Builder{}
+	b := bufio.NewWriter(strWriter)
+	writeHuffmanTable(&ogTable, b)
+
+	s := bufio.NewScanner(strings.NewReader(strWriter.String()))
+	s.Split(bufio.ScanBytes)
+	builtTable := readAndBuildHuffmanTable(s)
+
+	if pass, err := mapsEqual(*builtTable, ogTable); !pass {
+		t.Errorf(err.Error())
 	}
 }
