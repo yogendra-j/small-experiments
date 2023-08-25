@@ -82,3 +82,57 @@ func TestBuildHuffmanTree(t *testing.T) {
 		t.Errorf("Expected node to have a character of 'e', got %v", tree.right.left.char)
 	}
 }
+
+func TestBuildHuffmanTable(t *testing.T) {
+
+	tree := &node{char: "", freq: 27,
+		left: &node{char: " ", freq: 10,
+			left:  nil,
+			right: nil},
+		right: &node{char: "", freq: 17,
+			left: &node{char: "e", freq: 8,
+				left:  nil,
+				right: nil},
+			right: &node{char: "", freq: 9,
+				left: &node{char: "d", freq: 4,
+					left:  nil,
+					right: nil},
+				right: &node{char: "", freq: 5,
+					left: &node{char: "", freq: 2,
+						left: &node{char: "b", freq: 1,
+							left:  nil,
+							right: nil},
+						right: &node{char: "a", freq: 1,
+
+							left:  nil,
+							right: nil},
+					},
+					right: &node{char: "c", freq: 3,
+						left:  nil,
+						right: nil},
+				},
+			},
+		},
+	}
+
+	table := *buildHuffmanTable(tree)
+
+	if table[" "] != "0" {
+		t.Errorf("Expected ' ' to have a code of '0', got %v", table[" "])
+	}
+	if table["e"] != "10" {
+		t.Errorf("Expected 'e' to have a code of '10', got %v", table["e"])
+	}
+	if table["d"] != "110" {
+		t.Errorf("Expected 'd' to have a code of '110', got %v", table["d"])
+	}
+	if table["c"] != "1111" {
+		t.Errorf("Expected 'c' to have a code of '111', got %v", table["c"])
+	}
+	if table["b"] != "11100" {
+		t.Errorf("Expected 'b' to have a code of '1100', got %v", table["b"])
+	}
+	if table["a"] != "11101" {
+		t.Errorf("Expected 'a' to have a code of '1101', got %v", table["a"])
+	}
+}

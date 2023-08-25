@@ -86,3 +86,29 @@ func (h *nodeHeap) Pop() interface{} {
 	*h = old[0 : n-1]
 	return x
 }
+
+type nodeCodePair struct {
+	node *node
+	code string
+}
+
+func buildHuffmanTable(tree *node) *map[string]string {
+	table := make(map[string]string)
+
+	level := []*nodeCodePair{{node: tree, code: ""}}
+
+	for len(level) > 0 {
+		nextLevel := []*nodeCodePair{}
+		for _, ncp := range level {
+			if ncp.node.char != "" {
+				table[ncp.node.char] = ncp.code
+			} else {
+				nextLevel = append(nextLevel, &nodeCodePair{node: ncp.node.left, code: ncp.code + "0"})
+				nextLevel = append(nextLevel, &nodeCodePair{node: ncp.node.right, code: ncp.code + "1"})
+			}
+		}
+		level = nextLevel
+	}
+
+	return &table
+}
