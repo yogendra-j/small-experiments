@@ -69,10 +69,10 @@ func cut(fileName string, cols *[]int, sep string) {
 		lineOut := ""
 		for i, field := range fields {
 			if contains(*cols, i+1) {
-				lineOut += field + "\t"
+				lineOut += field + sep
 			}
 		}
-		fmt.Println(strings.TrimSuffix(lineOut, "\t"))
+		fmt.Println(strings.TrimSuffix(lineOut, sep))
 	}
 }
 
