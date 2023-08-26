@@ -18,7 +18,7 @@ func TestMain(t *testing.T) {
 		{[]string{"-", "-f", "1,2", "sample.tsv"}, "f0\tf1\n0\t1\n5\t6\n10\t11\n15\t16\n20\t21\n"},
 		{[]string{"-", "-f", "1,2", "-d", "	", "sample.tsv"}, "f0\tf1\n0\t1\n5\t6\n10\t11\n15\t16\n20\t21\n"},
 		{[]string{"-", "-f", "1 3", "-d", "\t", "sample.tsv"}, "f0\tf2\n0\t2\n5\t7\n10\t12\n15\t17\n20\t22\n"},
-		{[]string{"-", "-f", "1 3", "-d", ",", "sample.csv"}, "f0\tf2\n0\t2\n5\t7\n10\t12\n15\t17\n20\t22\n"},
+		{[]string{"-", "-f", "1 3", "-d", ",", "sample.csv"}, "f0,f2\n0,2\n5,7\n10,12\n15,17\n20,22\n"},
 	}
 
 	for i, test := range tests {
