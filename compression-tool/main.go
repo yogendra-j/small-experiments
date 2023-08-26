@@ -8,15 +8,72 @@ import (
 )
 
 func main() {
-	filePath := os.Args[1]
-	scanner, file := getScanner(&filePath)
-	if scanner == nil {
-		fmt.Println("Error opening file")
-		os.Exit(1)
-	}
-	defer file.Close()
+	if len(os.Args) == 3 {
+		filePath := os.Args[1]
+		scanner, file := getScanner(&filePath)
+		if scanner == nil {
+			fmt.Println("Error opening file")
+			os.Exit(1)
+		}
+		defer file.Close()
 
-	fmt.Println(buildFreqMap(scanner)["t"])
+		filePath = os.Args[2]
+		writer, file := getWriter(&filePath)
+		if writer == nil {
+			fmt.Println("Error opening file")
+			os.Exit(1)
+		}
+		defer file.Close()
+
+		table := buildAndWriteHuffmanTable(scanner, writer)
+
+		filePath = os.Args[1]
+		scanner, file = getScanner(&filePath)
+		if scanner == nil {
+			fmt.Println("Error opening file")
+			os.Exit(1)
+		}
+		defer file.Close()
+
+		encodeAndWriteFile(scanner, table, writer)
+	}
+	if len(os.Args) == 4 {
+		filePath := os.Args[2]
+		scanner, file := getScanner(&filePath)
+		scanner.Split(bufio.ScanBytes)
+		if scanner == nil {
+			fmt.Println("Error opening file")
+			os.Exit(1)
+		}
+		defer file.Close()
+
+		filePath = os.Args[3]
+		writer, file := getWriter(&filePath)
+		if writer == nil {
+			fmt.Println("Error opening file")
+			os.Exit(1)
+		}
+		defer file.Close()
+		decompressAndWriteFile(scanner, writer)
+	}
+}
+
+func decompressAndWriteFile(scanner *bufio.Scanner, writer *bufio.Writer) {
+
+	table := readAndBuildHuffmanTable(scanner)
+
+	decodeAndWriteFile(scanner, table, writer)
+}
+
+func buildAndWriteHuffmanTable(scanner *bufio.Scanner, writer *bufio.Writer) (table *map[string]string) {
+
+	freqMap := buildFreqMap(scanner)
+	tree := buildHuffmanTree(&freqMap)
+	table = buildHuffmanTable(tree)
+
+	writeHuffmanTable(table, writer)
+
+	return
 }
 
 func getScanner(filePath *string) (*bufio.Scanner, *os.File) {
@@ -46,6 +103,7 @@ func buildFreqMap(scanner *bufio.Scanner) map[string]int {
 		char := scanner.Text()
 		freqMap[char]++
 	}
+	freqMap["EOF"] = 0
 	return freqMap
 }
 
@@ -139,7 +197,7 @@ func readAndBuildHuffmanTable(scanner *bufio.Scanner) *map[string]string {
 			break
 		}
 		code := readOneCol(scanner)
-		table[chr] = code
+		table[code] = chr
 	}
 	return &table
 }
@@ -154,4 +212,66 @@ func readOneCol(scanner *bufio.Scanner) string {
 		readBytes = append(readBytes, b...)
 	}
 	return ""
+}
+
+func encodeAndWriteFile(scanner *bufio.Scanner, table *map[string]string, writer *bufio.Writer) {
+	var bufEncodedStr uint8 = 0
+	var bitsInBuffer uint8 = 0
+	for scanner.Scan() {
+		char := scanner.Text()
+		for _, bitFlag := range (*table)[char] {
+			if bitFlag == '1' {
+				bufEncodedStr = (bufEncodedStr << 1) | 1
+			} else {
+				bufEncodedStr = bufEncodedStr << 1
+			}
+			bitsInBuffer++
+			if bitsInBuffer == 8 {
+				writer.WriteByte(bufEncodedStr)
+				bufEncodedStr = 0
+				bitsInBuffer = 0
+			}
+		}
+	}
+	for _, bitFlag := range (*table)["EOF"] {
+		if bitFlag == '1' {
+			bufEncodedStr = (bufEncodedStr << 1) | 1
+		} else {
+			bufEncodedStr = bufEncodedStr << 1
+		}
+		bitsInBuffer++
+		if bitsInBuffer == 8 {
+			writer.WriteByte(bufEncodedStr)
+			bufEncodedStr = 0
+			bitsInBuffer = 0
+		}
+	}
+	if bitsInBuffer > 0 {
+		bufEncodedStr = bufEncodedStr << (8 - bitsInBuffer)
+		writer.WriteByte(bufEncodedStr)
+	}
+	writer.Flush()
+}
+
+func decodeAndWriteFile(scanner *bufio.Scanner, table *map[string]string, writer *bufio.Writer) {
+	currCode := ""
+
+	for scanner.Scan() {
+		b := scanner.Bytes()[0]
+		for i := 7; i >= 0; i-- {
+			if b&(1<<uint(i)) > 0 {
+				currCode += "1"
+			} else {
+				currCode += "0"
+			}
+			if char, ok := (*table)[currCode]; ok {
+				if char == "EOF" {
+					break
+				}
+				writer.WriteString(char)
+				currCode = ""
+			}
+		}
+	}
+	writer.Flush()
 }

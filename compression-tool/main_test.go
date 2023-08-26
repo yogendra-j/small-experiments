@@ -12,11 +12,11 @@ func TestBuildFreq(t *testing.T) {
 		text string
 		want map[string]int
 	}{
-		{"abcdef", map[string]int{"a": 1, "b": 1, "c": 1, "d": 1, "e": 1, "f": 1}},
-		{"bababc", map[string]int{"a": 2, "b": 3, "c": 1}},
-		{"", map[string]int{}},
-		{" ", map[string]int{" ": 1}},
-		{"Word 1 eur\no €\n \n ww", map[string]int{"W": 1, "o": 2, "r": 2, "d": 1, " ": 5, "1": 1, "e": 1, "u": 1, "€": 1, "w": 2, "\n": 3}},
+		{"abcdef", map[string]int{"a": 1, "b": 1, "c": 1, "d": 1, "e": 1, "f": 1, "EOF": 0}},
+		{"bababc", map[string]int{"a": 2, "b": 3, "c": 1, "EOF": 0}},
+		{"", map[string]int{"EOF": 0}},
+		{" ", map[string]int{" ": 1, "EOF": 0}},
+		{"Word 1 eur\no €\n \n ww", map[string]int{"W": 1, "o": 2, "r": 2, "d": 1, " ": 5, "1": 1, "e": 1, "u": 1, "€": 1, "w": 2, "\n": 3, "EOF": 0}},
 	}
 
 	for _, test := range tests {
@@ -137,7 +137,7 @@ func TestBuildHuffmanTable(t *testing.T) {
 	}
 }
 
-func TestWriteHuffmanTable(t *testing.T) {
+func TestWriteAndReadHuffmanTable(t *testing.T) {
 	ogTable := map[string]string{"a": "0", "b": "10", "#": "110", "$": "1110", "e": "1111", " ": "1", "\n": "01", "\t": "001"}
 	strWriter := &strings.Builder{}
 	b := bufio.NewWriter(strWriter)
@@ -147,7 +147,71 @@ func TestWriteHuffmanTable(t *testing.T) {
 	s.Split(bufio.ScanBytes)
 	builtTable := readAndBuildHuffmanTable(s)
 
-	if pass, err := mapsEqual(*builtTable, ogTable); !pass {
-		t.Errorf(err.Error())
+	if len(*builtTable) != len(ogTable) {
+		t.Errorf("Expected table to have %v elements, got %v", len(ogTable), len(*builtTable))
+	}
+	for k, v := range ogTable {
+		if (*builtTable)[v] != k {
+			t.Errorf("Expected table to have %v mapped to %v, got %v", k, v, (*builtTable)[v])
+		}
+	}
+}
+
+func TestEncodeAndWriteFile(t *testing.T) {
+	table := map[string]string{"a": "0", "b": "10", "#": "110", "$": "1110", "EOF": "1111"}
+	strWriter := &strings.Builder{}
+	b := bufio.NewWriter(strWriter)
+	scanner := bufio.NewScanner(strings.NewReader("ab#b$"))
+	scanner.Split(bufio.ScanRunes)
+
+	encodeAndWriteFile(scanner, &table, b)
+	encoded := strWriter.String()
+	encodedBytes := []byte(encoded)
+
+	var binString string
+	for _, b := range encodedBytes {
+		binString += fmt.Sprintf("%08b", b)
+	}
+	if binString != "0101101011101111" {
+		t.Errorf("Expected encoded string to be bits '01011011101111', got `%v`", binString)
+	}
+}
+
+func TestCompressDecompress(t *testing.T) {
+	tests := []struct {
+		text string
+	}{
+		{"abcdef"},
+		{"bababc"},
+		{"Word 1 eur\no €\n \n ww"},
+		{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaadfdafadf$%#@$%245235$@% 425 \n \n t $$$$$$$#$#$#$##$#$dfsfASaasdafenmtorot ;.;.>"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.text, func(t *testing.T) {
+			scanner := bufio.NewScanner(strings.NewReader(test.text))
+			strWriter := &strings.Builder{}
+			bw := bufio.NewWriter(strWriter)
+			scanner.Split(bufio.ScanRunes)
+
+			table := buildAndWriteHuffmanTable(scanner, bw)
+
+			scanner = bufio.NewScanner(strings.NewReader(test.text))
+			scanner.Split(bufio.ScanRunes)
+
+			encodeAndWriteFile(scanner, table, bw)
+
+			encoded := strWriter.String()
+			s := bufio.NewScanner(strings.NewReader(encoded))
+			s.Split(bufio.ScanBytes)
+			decompWriter := &strings.Builder{}
+			decompressAndWriteFile(s, bufio.NewWriter(decompWriter))
+
+			decompressed := decompWriter.String()
+
+			if decompressed != test.text {
+				t.Errorf("Expected decompressed text to be `%v`, got `%v`", test.text, decompressed)
+			}
+		})
 	}
 }
