@@ -20,6 +20,10 @@ func main() {
 	files := fset.Args()
 	intCols := parseToInts(cols)
 
+	if len(files) == 0 {
+		files = append(files, "-")
+	}
+
 	handleDownStreamExit()
 
 	for _, file := range files {

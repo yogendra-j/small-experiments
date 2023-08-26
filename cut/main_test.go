@@ -32,6 +32,26 @@ func TestMain(t *testing.T) {
 	}
 }
 
+func TestMain_stdin(t *testing.T) {
+	os.Args = []string{"-", "-f", "1"}
+	input := "f0\tf1\tf2\tf3\tf4\n0\t1\t2\t3\t4\n5\t6\t7\t8\t9\n10\t11\t12\t13\t14\n15\t16\t17\t18\t19\n20\t21\t22\t23\t24\n"
+
+	r, w, _ := os.Pipe()
+	w.WriteString(input)
+
+	originalStdin := os.Stdin
+	os.Stdin = r
+	defer func() { os.Stdin = originalStdin }()
+
+	w.Close()
+
+	actual := captureOutput(main)
+	expected := "f0\n0\n5\n10\n15\n20\n"
+	if actual != expected {
+		t.Errorf("got = `%v`, want `%v`", actual, expected)
+	}
+}
+
 func captureOutput(f func()) string {
 	orig := os.Stdout
 	r, w, _ := os.Pipe()
