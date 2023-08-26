@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 )
@@ -213,5 +214,26 @@ func TestCompressDecompress(t *testing.T) {
 				t.Errorf("Expected decompressed text to be `%v`, got `%v`", test.text, decompressed)
 			}
 		})
+	}
+}
+
+func TestMain(t *testing.T) {
+
+	os.Args = []string{"", "test.txt", "test.txt.huff"}
+	main()
+	os.Args = []string{"", "-d", "test.txt.huff", "test.txt.dehuff"}
+	main()
+
+	originalFile, err := os.ReadFile("test.txt")
+	if err != nil {
+		t.Errorf("Error reading original file: %v", err)
+	}
+	decompressedFile, err := os.ReadFile("test.txt.dehuff")
+	if err != nil {
+		t.Errorf("Error reading decompressed file: %v", err)
+	}
+
+	if string(originalFile) != string(decompressedFile) {
+		t.Errorf("Expected decompressed file to be `%v`, got `%v`", string(originalFile), string(decompressedFile))
 	}
 }
