@@ -6,20 +6,26 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 func main() {
-	fset := flag.NewFlagSet("gocut", flag.ExitOnError)
+	fset := flag.NewFlagSet("goCut", flag.ExitOnError)
 	cols := fset.String("f", "", "comma/space separated list of field indices")
 	sep := fset.String("d", "\t", "field delimiter")
 	fset.Parse(os.Args[1:])
 	files := fset.Args()
 	intCols := parseToInts(cols)
+
+	handleDownStreamExit()
+
 	for _, file := range files {
 		cut(file, intCols, *sep)
 	}
+
 }
 
 func parseToInts(cols *string) *[]int {
@@ -37,6 +43,20 @@ func parseToInts(cols *string) *[]int {
 		intCols[i] = pc
 	}
 	return &intCols
+}
+
+func handleDownStreamExit() {
+
+	signalChannel := make(chan os.Signal, 1)
+
+	// Notify the signal channel when a SIGPIPE is received
+	signal.Notify(signalChannel, syscall.SIGPIPE)
+
+	// Start a goroutine that will terminate the program when a SIGPIPE is received
+	go func() {
+		<-signalChannel
+		os.Exit(0)
+	}()
 }
 
 func cut(fileName string, cols *[]int, sep string) {
