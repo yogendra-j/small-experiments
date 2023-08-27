@@ -1,4 +1,4 @@
-package lb
+package main
 
 import (
 	"fmt"
@@ -7,7 +7,11 @@ import (
 	"net/http"
 )
 
-func StartServer(ch chan int) {
+func main() {
+	StartServer()
+}
+
+func StartServer() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -16,8 +20,9 @@ func StartServer(ch chan int) {
 		log.Printf("Host: %s\n", r.Host)
 		log.Printf("User-Agent: %s\n", r.UserAgent())
 		log.Printf("Accept: %s\n", r.Header.Get("Accept"))
+		log.Println()
 
-		resp, err := getResponseFrom("http://localhost:4000")
+		resp, err := getResponseFrom(r.URL.Path)
 		if err != nil {
 			fmt.Fprintln(w, err)
 			return
@@ -25,17 +30,14 @@ func StartServer(ch chan int) {
 		fmt.Fprintln(w, resp)
 	})
 
-	mux.HandleFunc("/shutdown", func(w http.ResponseWriter, r *http.Request) {
-		defer func() { ch <- 1 }()
-		log.Println("Received shutdown signal")
-	})
-
 	log.Fatalln(http.ListenAndServe(":3000", mux))
 }
 
-func getResponseFrom(url string) (string, error) {
+func getResponseFrom(endpoint string) (string, error) {
+	url := "http://localhost:4000/" + endpoint
 	c := http.Client{}
 	resp, err := c.Get(url)
+
 	if err != nil {
 		log.Println(err)
 		return "", err
