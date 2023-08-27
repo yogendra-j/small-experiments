@@ -36,7 +36,7 @@ func TestRoundRobin_AddServer(t *testing.T) {
 	servers := []string{"Server1", "Server2", "Server3"}
 	rr := NewRoundRobin(servers)
 	rr.AddServer("Server4")
-	if rr.servers[3] != "Server4" && rr.Len() != 4 {
+	if rr.activeServers[3] != "Server4" && rr.Len() != 4 {
 		t.Errorf("Server4 was not added")
 	}
 }
