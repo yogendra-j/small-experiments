@@ -8,17 +8,18 @@ import (
 )
 
 func main() {
-	startServer()
+	port := os.Args[1]
+	startServer(port)
 }
 
-func startServer() {
+func startServer(port string) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", rootHandler)
 
 	mux.HandleFunc("/shutdown", shutdownHandler)
 
-	log.Fatalln(http.ListenAndServe(":4000", mux))
+	log.Fatalln(http.ListenAndServe(":"+port, mux))
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Accept: %s\n", r.Header.Get("Accept"))
 	log.Println()
 
-	fmt.Fprintln(w, "Hello, World! This is a Go backend server.")
+	fmt.Fprintln(w, "Hello, World! This is running on port: "+r.Host)
 }
 
 func shutdownHandler(w http.ResponseWriter, r *http.Request) {
