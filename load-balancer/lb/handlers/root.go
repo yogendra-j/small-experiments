@@ -8,6 +8,8 @@ import (
 	"net/http"
 )
 
+var c = http.Client{}
+
 func RootHandler(rr *roundrobin.RoundRobin) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -27,7 +29,6 @@ func getResponseFrom(endpoint string, servers *roundrobin.RoundRobin) (string, e
 		return "", fmt.Errorf("no servers available")
 	}
 	url := servers.Next() + endpoint
-	c := http.Client{}
 	resp, err := c.Get(url)
 
 	if err != nil {
