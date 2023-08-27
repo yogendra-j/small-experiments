@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"lb/middleware"
 	"lb/roundrobin"
 	"log"
 	"net/http"
@@ -20,21 +21,17 @@ func main() {
 func StartServer() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", rootHandler)
+	mux.HandleFunc("/", middleware.LogRequestMw(rootHandler))
 
-	mux.HandleFunc("/add-backend", registerServer)
+	mux.HandleFunc("/add-backend", middleware.LogRequestMw(registerServer))
 
-	mux.HandleFunc("/list-backends", listServersHandler)
+	mux.HandleFunc("/list-backends", middleware.LogRequestMw(listServersHandler))
 
 	log.Fatalln(http.ListenAndServe(":3000", mux))
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received request from %s\n", r.RemoteAddr)
-	log.Printf("%s %s %s\n", r.Method, r.URL, r.Proto)
-	log.Printf("Host: %s\n", r.Host)
-	log.Printf("User-Agent: %s\n", r.UserAgent())
-	log.Printf("Accept: %s\n", r.Header.Get("Accept"))
+
 	log.Println()
 
 	resp, err := getResponseFrom(r.URL.Path)
@@ -75,12 +72,6 @@ type Server struct {
 }
 
 func registerServer(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received request from %s\n", r.RemoteAddr)
-	log.Printf("%s %s %s\n", r.Method, r.URL, r.Proto)
-	log.Printf("Host: %s\n", r.Host)
-	log.Printf("User-Agent: %s\n", r.UserAgent())
-	log.Printf("Accept: %s\n", r.Header.Get("Accept"))
-	log.Printf("Content-Type: %s\n", r.Header.Get("Content-Type"))
 
 	if r.Method != http.MethodPost {
 		log.Printf("Method not allowed\n\n")
@@ -113,12 +104,6 @@ func readJSON[T any](r io.Reader, v T) error {
 }
 
 func listServersHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("Received request from %s\n", r.RemoteAddr)
-	log.Printf("%s %s %s\n", r.Method, r.URL, r.Proto)
-	log.Printf("Host: %s\n", r.Host)
-	log.Printf("User-Agent: %s\n", r.UserAgent())
-	log.Printf("Accept: %s\n", r.Header.Get("Accept"))
-	log.Printf("Content-Type: %s\n", r.Header.Get("Content-Type"))
 
 	availableServers := servers.Servers()
 
