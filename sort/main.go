@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -12,6 +14,8 @@ func main() {
 
 	lr, file := lineScanner(filePath)
 	defer file.Close()
+
+	handleDownStreamExit()
 
 	lines := make([]string, 0)
 
@@ -24,6 +28,20 @@ func main() {
 	for _, line := range lines {
 		fmt.Println(line)
 	}
+}
+
+func handleDownStreamExit() {
+
+	signalChannel := make(chan os.Signal, 1)
+
+	// Notify the signal channel when a SIGPIPE is received
+	signal.Notify(signalChannel, syscall.SIGPIPE)
+
+	// Start a goroutine that will terminate the program when a SIGPIPE is received
+	go func() {
+		<-signalChannel
+		os.Exit(0)
+	}()
 }
 
 func lineScanner(filePath string) (*bufio.Scanner, *os.File) {
